@@ -1,15 +1,38 @@
 import { DB } from "@lib/DB";
 import { NextRequest, NextResponse } from "next/server";
 
-export const GET = async (request: NextRequest) => {
-  // return NextResponse.json(
-  //   {
-  //     ok: false,
-  //     message: "Invalid token",
-  //   },
-  //   { status: 401 }
-  // );
+import { headers } from "next/headers";
+import jwt from "jsonwebtoken";
+import { Payload } from "@lib/DB";
 
+export const GET = async (request: NextRequest) => {
+
+  // extract token from request
+  const rawAuthHaeder = headers().get('authorization'); 
+  //const token = rawAuthHaeder?.split(' ')[1];
+  if (!rawAuthHaeder || !rawAuthHaeder.startsWith('Bearer ')) {
+    return NextResponse.json({
+        ok: false,
+        message: "Missing or invalid authorization header",
+      },{ status: 401 }
+    );
+  }
+  const token = rawAuthHaeder.split(' ')[1];
+  const secret = process.env.JWT_SECRET || "This is another secret";
+  
+  let studentId = null;
+  try {
+    const payload = jwt.verify(token, secret);
+    // console.log(payload);
+    studentId = (<Payload>payload).studentId;
+  } catch {
+    return NextResponse.json({
+      ok: false,
+      message: "Invalid token",
+    },{ status: 401 });
+  }
+
+  //search in enrollment DB for specified "student"
   const courseNoList = [];
   for (const enroll of DB.enrollments) {
     if (enroll.studentId === studentId) {
@@ -23,6 +46,32 @@ export const GET = async (request: NextRequest) => {
 };
 
 export const POST = async (request: NextRequest) => {
+  
+  // extract token from request
+  const rawAuthHaeder = headers().get('authorization'); 
+  //const token = rawAuthHaeder?.split(' ')[1];
+  if (!rawAuthHaeder || !rawAuthHaeder.startsWith('Bearer ')) {
+    return NextResponse.json({
+        ok: false,
+        message: "Missing or invalid authorization header",
+      },{ status: 401 }
+    );
+  }
+  const token = rawAuthHaeder.split(' ')[1];
+  const secret = process.env.JWT_SECRET || "This is another secret";
+  
+  let studentId = null;
+  try {
+    const payload = jwt.verify(token, secret);
+    // console.log(payload);
+    studentId = (<Payload>payload).studentId;
+  } catch {
+    return NextResponse.json({
+      ok: false,
+      message: "Invalid token",
+    },{ status: 401 });
+  }
+
   //read body request
   const body = await request.json();
   const { courseNo } = body;
